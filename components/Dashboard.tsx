@@ -1,6 +1,6 @@
 "use client";
 
-import { useOptimistic, useRef, useState, useTransition } from "react";
+import { useId, useOptimistic, useState, useTransition } from "react";
 import { reorderHabits } from "@/app/actions/habits";
 import { isScheduledOn } from "@/lib/schedule";
 import HabitCard from "./HabitCard";
@@ -18,16 +18,22 @@ export default function Dashboard({ habits, days }: DashboardProps) {
   const [dragging, setDragging] = useState<string | null>(null);
   const [target, setTarget] = useState<string | null>(null);
   const [message, setMessage] = useState("");
-  const listRef = useRef<HTMLElement>(null);
+  const [openHistoryId, setOpenHistoryId] = useState<string | null>(null);
+  const [showNotToday, setShowNotToday] = useState(false);
+  const listId = useId();
   const scheduledHabits = habits.filter((habit) => isScheduledOn(habit.schedule_days, days.at(-1)!));
   const completedCount = scheduledHabits.filter((habit) =>
     habit.completions.some((completion) => completion.done && completion.date === days.at(-1)),
   ).length;
   const progress = scheduledHabits.length ? Math.round(completedCount / scheduledHabits.length * 100) : 0;
+  const groups = [
+    orderedHabits.filter((habit) => isScheduledOn(habit.schedule_days, days.at(-1)!)),
+    orderedHabits.filter((habit) => !isScheduledOn(habit.schedule_days, days.at(-1)!)),
+  ];
 
   function targetAt(x: number, y: number) {
     const element = document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-habit-id]");
-    return element && listRef.current?.contains(element) ? element.dataset.habitId ?? null : null;
+    return element?.closest("[data-habit-list]")?.id === listId ? element.dataset.habitId ?? null : null;
   }
 
   function moveHabit(id: string, destination: string | null) {
@@ -35,6 +41,8 @@ export default function Dashboard({ habits, days }: DashboardProps) {
     const from = orderedHabits.findIndex((habit) => habit.id === id);
     const to = orderedHabits.findIndex((habit) => habit.id === destination);
     if (from < 0 || to < 0) return;
+    if (isScheduledOn(orderedHabits[from].schedule_days, days.at(-1)!) !==
+        isScheduledOn(orderedHabits[to].schedule_days, days.at(-1)!)) return;
     const next = [...orderedHabits];
     const [moved] = next.splice(from, 1);
     next.splice(to, 0, moved);
@@ -76,20 +84,34 @@ export default function Dashboard({ habits, days }: DashboardProps) {
         Drag the grip to reorder habits, or focus it and use the arrow keys.
       </p>
       <p role="status" className={message ? "text-sm text-zinc-400" : "sr-only"}>{message}</p>
-      <section ref={listRef} aria-label="Habits" className="space-y-4">
+      <section id={listId} data-habit-list aria-label="Habits" className="space-y-4">
         {habits.length === 0 ? (
           <p className="rounded-xl border border-dashed border-zinc-800 p-6 text-center text-sm text-zinc-500">
             No habits yet. Add your first one below.
           </p>
         ) : (
-          orderedHabits.map((habit, index) => (
+          groups.map((group, groupIndex) => (
+            <div key={groupIndex} className="space-y-3">
+              {groupIndex === 0 ? (
+                <h2 className="flex justify-between text-sm text-zinc-400"><span>Today</span><span>{group.length} habits</span></h2>
+              ) : group.length > 0 ? (
+                <button type="button" aria-expanded={showNotToday} aria-controls="not-today-habits"
+                  onClick={() => { setShowNotToday((value) => !value); setOpenHistoryId(null); }}
+                  className="flex min-h-11 w-full items-center justify-between rounded-lg text-sm text-zinc-400 hover:text-zinc-200">
+                  <span>Not today · {group.length}</span><span>{showNotToday ? "⌃" : "⌄"}</span>
+                </button>
+              ) : null}
+              <div id={groupIndex === 1 ? "not-today-habits" : undefined} hidden={groupIndex === 1 && !showNotToday} className="space-y-3">
+          {group.map((habit, index) => (
             <div key={habit.id} data-habit-id={habit.id}
               className={`rounded-2xl ${dragging === habit.id ? "opacity-50" : ""} ${target === habit.id && target !== dragging ? "ring-2 ring-indigo-400" : ""}`}>
-              <HabitCard habit={habit} days={days} dragHandle={
-                <button type="button" disabled={isSaving || habits.length < 2}
-                  aria-label={`Move ${habit.name}, position ${index + 1} of ${habits.length}`}
+              <HabitCard habit={habit} days={days}
+                historyOpen={openHistoryId === habit.id}
+                onToggleHistory={() => setOpenHistoryId((current) => current === habit.id ? null : habit.id)} dragHandle={
+                <button type="button" disabled={isSaving || group.length < 2}
+                  aria-label={`Move ${habit.name}, position ${index + 1} of ${group.length} in ${groupIndex === 0 ? "Today" : "Not today"}`}
                   aria-describedby="reorder-help"
-                  className="-ml-2 flex h-8 w-6 shrink-0 touch-none select-none items-center justify-center rounded text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200 focus-visible:outline-2 focus-visible:outline-indigo-400 disabled:opacity-30 cursor-grab active:cursor-grabbing"
+                  className="flex h-11 w-9 shrink-0 touch-none select-none items-center justify-center rounded text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200 focus-visible:outline-2 focus-visible:outline-indigo-400 disabled:opacity-30 cursor-grab active:cursor-grabbing"
                   onPointerDown={(event) => {
                     if (!event.isPrimary || event.button !== 0) return;
                     event.currentTarget.setPointerCapture(event.pointerId);
@@ -112,7 +134,7 @@ export default function Dashboard({ habits, days }: DashboardProps) {
                     if (event.key === "Escape") cancelDrag();
                     if (dragging || !["ArrowUp", "ArrowDown"].includes(event.key)) return;
                     event.preventDefault();
-                    moveHabit(habit.id, orderedHabits[index + (event.key === "ArrowUp" ? -1 : 1)]?.id ?? null);
+                    moveHabit(habit.id, group[index + (event.key === "ArrowUp" ? -1 : 1)]?.id ?? null);
                   }}>
                   <svg aria-hidden="true" viewBox="0 0 16 24" className="h-5 w-4" fill="currentColor">
                     {[6, 12, 18].map((y) => <g key={y}><circle cx="5" cy={y} r="1.5" /><circle cx="11" cy={y} r="1.5" /></g>)}
@@ -120,14 +142,17 @@ export default function Dashboard({ habits, days }: DashboardProps) {
                 </button>
               } />
             </div>
+          ))}
+              </div>
+            </div>
           ))
         )}
       </section>
 
-      <section className="rounded-2xl border border-white/5 bg-zinc-900/30 p-5 sm:p-6">
-        <h2 className="mb-3 text-sm font-medium text-zinc-300">New habit</h2>
-        <HabitForm mode="create" />
-      </section>
+      <details className="rounded-2xl border border-dashed border-zinc-700 p-4">
+        <summary className="cursor-pointer text-center text-sm font-medium text-zinc-300">New habit</summary>
+        <div className="mt-4"><HabitForm mode="create" /></div>
+      </details>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { useState, useTransition, type ReactNode } from "react";
 import { deleteHabit, toggleCompletion } from "@/app/actions/habits";
 import { today } from "@/lib/dates";
 import { isScheduledOn, scheduleLabel } from "@/lib/schedule";
+import { streakColor } from "@/lib/streak-style";
 import HistoryGrid from "./HistoryGrid";
 import HabitForm from "./HabitForm";
 import type { HabitWithCompletions } from "@/types/habit";
@@ -12,9 +13,11 @@ type HabitCardProps = {
   habit: HabitWithCompletions;
   days: string[];
   dragHandle?: ReactNode;
+  historyOpen: boolean;
+  onToggleHistory: () => void;
 };
 
-export default function HabitCard({ habit, days, dragHandle }: HabitCardProps) {
+export default function HabitCard({ habit, days, dragHandle, historyOpen, onToggleHistory }: HabitCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [animateCompletion, setAnimateCompletion] = useState(false);
@@ -42,14 +45,17 @@ export default function HabitCard({ habit, days, dragHandle }: HabitCardProps) {
     if (!confirm(`Delete "${habit.name}"?`)) return;
 
     startTransition(async () => {
-      await deleteHabit(habit.id);
+      try {
+        await deleteHabit(habit.id);
+      } catch {
+        setError("Could not delete this habit. Please try again.");
+      }
     });
   }
 
   return (
-    <article className="rounded-2xl border border-white/[0.07] bg-zinc-900/60 p-5 shadow-sm transition-colors hover:border-white/15 sm:p-6">
-      <div className="flex items-start gap-3">
-        {dragHandle}
+    <article className="rounded-2xl border border-white/[0.07] bg-zinc-900/60 p-3 transition-colors hover:border-white/15 sm:p-4">
+      <div className="flex items-center gap-2">
         <button
           type="button"
           onClick={handleToggle}
@@ -75,36 +81,49 @@ export default function HabitCard({ habit, days, dragHandle }: HabitCardProps) {
         </button>
 
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
-            <div>
-              <h2 className="break-words text-lg font-semibold tracking-tight text-zinc-100">{habit.name}</h2>
-              <p className="mt-1 text-xs text-zinc-400">
-                {habit.streak} day streak
-              </p>
-              <p className="mt-1 text-xs text-indigo-300/80">
-                {scheduleLabel(habit.schedule_days)}{!scheduledToday && " · Rest day"}
-              </p>
-            </div>
-            <div className="flex gap-1">
+          <div className="flex items-baseline justify-between gap-2">
+            <h2 className="min-w-0 break-words text-base font-medium text-zinc-100">{habit.name}</h2>
+            <span className="max-w-[45%] shrink-0 text-right text-[11px] leading-4 text-zinc-400">
+              {scheduleLabel(habit.schedule_days)}
+            </span>
+          </div>
+        </div>
+        <details className="relative shrink-0">
+          <summary aria-label={`Options for ${habit.name}`} className="flex h-11 w-8 cursor-pointer list-none items-center justify-center rounded-lg text-xl text-zinc-400 hover:bg-zinc-800 [&::-webkit-details-marker]:hidden">⋯</summary>
+          <div className="absolute right-0 top-full z-10 w-32 rounded-xl border border-zinc-700 bg-zinc-900 p-1 shadow-lg">
               <button
                 type="button"
-                onClick={() => setIsEditing((value) => !value)}
-                className="rounded-md px-2 py-1 text-xs text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+                onClick={(event) => {
+                  event.currentTarget.closest("details")?.removeAttribute("open");
+                  setIsEditing((value) => !value);
+                }}
+                className="min-h-11 w-full rounded-md px-3 py-2 text-left text-sm text-zinc-300 hover:bg-zinc-800"
               >
                 {isEditing ? "Cancel" : "Edit"}
               </button>
               <button
                 type="button"
-                onClick={handleDelete}
+                onClick={(event) => {
+                  event.currentTarget.closest("details")?.removeAttribute("open");
+                  handleDelete();
+                }}
                 disabled={isPending}
-                className="rounded-md px-2 py-1 text-xs text-red-400 hover:bg-zinc-800"
+                className="min-h-11 w-full rounded-md px-3 py-2 text-left text-sm text-red-400 hover:bg-zinc-800"
               >
                 Delete
               </button>
-            </div>
           </div>
-
-        </div>
+        </details>
+      </div>
+      <div className="mt-1 flex flex-wrap items-center gap-x-2">
+        {dragHandle}
+        <p className={`min-w-0 flex-1 ${habit.streak === 0 ? "text-sm font-normal" : "text-lg font-medium"} ${streakColor(habit.streak)}`}>
+          {habit.streak === 0 ? "Start small today." : `${habit.streak} day streak`}
+        </p>
+        <button type="button" onClick={onToggleHistory} aria-expanded={historyOpen} aria-controls={`history-${habit.id}`}
+          className="min-h-11 rounded-lg px-2 text-xs text-indigo-300 hover:bg-zinc-800">
+          History {historyOpen ? "⌃" : "⌄"}
+        </button>
       </div>
       {error && <p role="alert" className="mt-3 text-sm text-red-400">{error}</p>}
           {isEditing ? (
@@ -118,14 +137,15 @@ export default function HabitCard({ habit, days, dragHandle }: HabitCardProps) {
                 onDone={() => setIsEditing(false)}
               />
             </div>
-          ) : (
+          ) : null}
+          <div id={`history-${habit.id}`} hidden={!historyOpen}>
             <HistoryGrid
               days={days}
               completedDates={completedDates}
               color={habit.color}
               scheduleDays={habit.schedule_days}
             />
-          )}
+          </div>
     </article>
   );
 }
