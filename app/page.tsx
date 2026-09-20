@@ -9,8 +9,6 @@ import type { Completion, Habit, HabitWithCompletions } from "@/types/habit";
 
 async function loadHabits(shouldSeed = true): Promise<HabitWithCompletions[]> {
   const supabase = await createClient();
-  const days = getLastNDays(HISTORY_DAYS);
-  const startDate = days[0];
 
   const { data: habits, error: habitsError } = await supabase
     .from("habits")
@@ -37,8 +35,7 @@ async function loadHabits(shouldSeed = true): Promise<HabitWithCompletions[]> {
 
   const { data: completions, error: completionsError } = await supabase
     .from("completions")
-    .select("*")
-    .gte("date", startDate);
+    .select("*");
 
   if (completionsError) throw new Error(completionsError.message);
 

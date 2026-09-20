@@ -4,15 +4,15 @@ type HistoryGridProps = {
   color: string;
 };
 
-/** 14-day dot grid — filled when the habit was completed. */
+/** 8-day dot grid — filled when the habit was completed. */
 export default function HistoryGrid({
   days,
   completedDates,
   color,
 }: HistoryGridProps) {
   return (
-    <div className="mt-3">
-      <div className="grid grid-cols-7 gap-1.5 sm:grid-cols-14">
+    <div className="mt-3 overflow-x-auto">
+      <div className="grid min-w-56 grid-cols-8 gap-1.5">
         {days.map((day) => {
           const done = completedDates.has(day);
           const date = new Date(`${day}T12:00:00`);

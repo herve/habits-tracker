@@ -1,4 +1,4 @@
-export const HISTORY_DAYS = 14;
+export const HISTORY_DAYS = 8;
 
 export const HABIT_COLORS = [
   "#6366f1",
