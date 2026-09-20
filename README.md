@@ -6,6 +6,7 @@ Minimal dark habit tracker built with Next.js, TypeScript, Tailwind, and Supabas
 
 - Email/password auth
 - Add, edit, delete habits
+- Drag habits by their grip to reorder (mouse or touch), or focus the grip and use the arrow keys. Order is saved in your account metadata.
 - Daily checkbox per habit
 - 14-day history grid
 - Streak counter

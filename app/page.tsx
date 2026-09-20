@@ -19,6 +19,17 @@ async function loadHabits(shouldSeed = true): Promise<HabitWithCompletions[]> {
 
   if (habitsError) throw new Error(habitsError.message);
 
+  const { data: { user } } = await supabase.auth.getUser();
+  const savedOrder: unknown = user?.user_metadata?.habit_order;
+  const order = new Map<string, number>(
+    Array.isArray(savedOrder)
+      ? savedOrder.filter((id): id is string => typeof id === "string").map((id, index) => [id, index])
+      : [],
+  );
+  habits?.sort((a, b) =>
+    (order.get(a.id) ?? Infinity) - (order.get(b.id) ?? Infinity),
+  );
+
   if (!habits?.length && shouldSeed) {
     await seedDefaultHabits();
     return loadHabits(false);

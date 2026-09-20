@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type ReactNode } from "react";
 import { deleteHabit, toggleCompletion } from "@/app/actions/habits";
 import { today } from "@/lib/dates";
 import HistoryGrid from "./HistoryGrid";
@@ -10,9 +10,10 @@ import type { HabitWithCompletions } from "@/types/habit";
 type HabitCardProps = {
   habit: HabitWithCompletions;
   days: string[];
+  dragHandle?: ReactNode;
 };
 
-export default function HabitCard({ habit, days }: HabitCardProps) {
+export default function HabitCard({ habit, days, dragHandle }: HabitCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -38,6 +39,7 @@ export default function HabitCard({ habit, days }: HabitCardProps) {
   return (
     <article className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
       <div className="flex items-start gap-3">
+        {dragHandle}
         <button
           type="button"
           onClick={handleToggle}

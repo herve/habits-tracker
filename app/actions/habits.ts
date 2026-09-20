@@ -108,3 +108,21 @@ export async function signOut() {
   await supabase.auth.signOut();
   redirect("/login");
 }
+
+export async function reorderHabits(ids: string[]) {
+  const { supabase, userId } = await getUserId();
+  if (!Array.isArray(ids) || ids.some((id) => typeof id !== "string") ||
+      new Set(ids).size !== ids.length) {
+    throw new Error("Invalid habit order");
+  }
+  const { data: habits, error: readError } = await supabase
+    .from("habits").select("id").eq("user_id", userId);
+  if (readError) throw new Error(readError.message);
+  const ownedIds = new Set(habits.map((habit) => habit.id));
+  if (ids.length !== ownedIds.size || ids.some((id) => !ownedIds.has(id))) {
+    throw new Error("Habits changed. Refresh and try again.");
+  }
+  const { error } = await supabase.auth.updateUser({ data: { habit_order: ids } });
+  if (error) throw new Error(error.message);
+  revalidatePath("/");
+}
