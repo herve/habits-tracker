@@ -51,7 +51,7 @@ async function loadHabits(shouldSeed = true): Promise<HabitWithCompletions[]> {
     return {
       ...habit,
       completions: habitCompletions,
-      streak: computeStreak(completedDates),
+      streak: computeStreak(completedDates, undefined, habit.schedule_days ?? null),
     };
   });
 }

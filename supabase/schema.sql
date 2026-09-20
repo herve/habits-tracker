@@ -5,6 +5,13 @@ create table if not exists public.habits (
   user_id uuid references auth.users(id) on delete cascade not null,
   name text not null,
   color text not null default '#6366f1',
+  schedule_days integer[] default null constraint habits_schedule_days_check check (
+    schedule_days is null or (
+      cardinality(schedule_days) between 1 and 7
+      and schedule_days <@ array[0,1,2,3,4,5,6]
+      and array_position(schedule_days, null) is null
+    )
+  ),
   created_at timestamptz default now()
 );
 

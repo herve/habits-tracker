@@ -3,6 +3,7 @@ export type Habit = {
   user_id: string;
   name: string;
   color: string;
+  schedule_days?: number[] | null;
   created_at: string;
 };
 

@@ -2,6 +2,7 @@
 
 import { useOptimistic, useRef, useState, useTransition } from "react";
 import { reorderHabits } from "@/app/actions/habits";
+import { isScheduledOn } from "@/lib/schedule";
 import HabitCard from "./HabitCard";
 import HabitForm from "./HabitForm";
 import type { HabitWithCompletions } from "@/types/habit";
@@ -18,6 +19,11 @@ export default function Dashboard({ habits, days }: DashboardProps) {
   const [target, setTarget] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const listRef = useRef<HTMLElement>(null);
+  const scheduledHabits = habits.filter((habit) => isScheduledOn(habit.schedule_days, days.at(-1)!));
+  const completedCount = scheduledHabits.filter((habit) =>
+    habit.completions.some((completion) => completion.done && completion.date === days.at(-1)),
+  ).length;
+  const progress = scheduledHabits.length ? Math.round(completedCount / scheduledHabits.length * 100) : 0;
 
   function targetAt(x: number, y: number) {
     const element = document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-habit-id]");
@@ -50,12 +56,27 @@ export default function Dashboard({ habits, days }: DashboardProps) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-lg space-y-6 px-4 py-6">
-      <p id="reorder-help" className="text-xs text-zinc-500">
+    <div className="mx-auto w-full max-w-xl space-y-6 px-4 py-8 sm:py-10">
+      <section aria-labelledby="daily-progress" className="rounded-2xl border border-indigo-300/10 bg-gradient-to-br from-indigo-500/10 to-zinc-900/50 p-6">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h2 id="daily-progress" className="text-sm font-medium text-indigo-200">Today’s progress</h2>
+            <p className="mt-2 text-2xl font-semibold tracking-tight text-zinc-100">{completedCount} <span className="text-base font-normal text-zinc-400">of {scheduledHabits.length} completed</span></p>
+          </div>
+          <span className="text-2xl font-semibold tabular-nums text-indigo-300">{progress}%</span>
+        </div>
+        <div role="progressbar" aria-label="Today's habit completion" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} className="mt-5 h-2 overflow-hidden rounded-full bg-zinc-800">
+          <div className="h-full rounded-full bg-indigo-400 transition-[width] duration-500 ease-out motion-reduce:transition-none" style={{ width: `${progress}%` }} />
+        </div>
+        <p className="mt-3 text-sm text-zinc-400" aria-live="polite">
+          {habits.length === 0 ? "A small habit is a good place to start." : scheduledHabits.length === 0 ? "No habits scheduled today. Enjoy your rest day." : completedCount === scheduledHabits.length ? "All done for today. Enjoy the feeling." : completedCount === 0 ? "One small step at a time." : "You’re making time for yourself. Keep going."}
+        </p>
+      </section>
+      <p id="reorder-help" className="sr-only">
         Drag the grip to reorder habits, or focus it and use the arrow keys.
       </p>
-      <p role="status" className="text-sm text-zinc-400">{message}</p>
-      <section ref={listRef} aria-label="Habits" className="space-y-3">
+      <p role="status" className={message ? "text-sm text-zinc-400" : "sr-only"}>{message}</p>
+      <section ref={listRef} aria-label="Habits" className="space-y-4">
         {habits.length === 0 ? (
           <p className="rounded-xl border border-dashed border-zinc-800 p-6 text-center text-sm text-zinc-500">
             No habits yet. Add your first one below.
@@ -63,7 +84,7 @@ export default function Dashboard({ habits, days }: DashboardProps) {
         ) : (
           orderedHabits.map((habit, index) => (
             <div key={habit.id} data-habit-id={habit.id}
-              className={`rounded-xl ${dragging === habit.id ? "opacity-50" : ""} ${target === habit.id && target !== dragging ? "ring-2 ring-indigo-400" : ""}`}>
+              className={`rounded-2xl ${dragging === habit.id ? "opacity-50" : ""} ${target === habit.id && target !== dragging ? "ring-2 ring-indigo-400" : ""}`}>
               <HabitCard habit={habit} days={days} dragHandle={
                 <button type="button" disabled={isSaving || habits.length < 2}
                   aria-label={`Move ${habit.name}, position ${index + 1} of ${habits.length}`}
@@ -103,7 +124,7 @@ export default function Dashboard({ habits, days }: DashboardProps) {
         )}
       </section>
 
-      <section className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-4">
+      <section className="rounded-2xl border border-white/5 bg-zinc-900/30 p-5 sm:p-6">
         <h2 className="mb-3 text-sm font-medium text-zinc-300">New habit</h2>
         <HabitForm mode="create" />
       </section>

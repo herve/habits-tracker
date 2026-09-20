@@ -3,6 +3,7 @@
 import { useState, useTransition, type ReactNode } from "react";
 import { deleteHabit, toggleCompletion } from "@/app/actions/habits";
 import { today } from "@/lib/dates";
+import { isScheduledOn, scheduleLabel } from "@/lib/schedule";
 import HistoryGrid from "./HistoryGrid";
 import HabitForm from "./HabitForm";
 import type { HabitWithCompletions } from "@/types/habit";
@@ -16,15 +17,24 @@ type HabitCardProps = {
 export default function HabitCard({ habit, days, dragHandle }: HabitCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [animateCompletion, setAnimateCompletion] = useState(false);
+  const [error, setError] = useState("");
 
   const completedDates = new Set(
     habit.completions.filter((c) => c.done).map((c) => c.date),
   );
   const isDoneToday = completedDates.has(today());
+  const scheduledToday = isScheduledOn(habit.schedule_days, today());
 
   function handleToggle() {
     startTransition(async () => {
-      await toggleCompletion(habit.id, today(), !isDoneToday);
+      setError("");
+      try {
+        await toggleCompletion(habit.id, today(), !isDoneToday);
+        setAnimateCompletion(!isDoneToday);
+      } catch {
+        setError("Could not update this habit. Please try again.");
+      }
     });
   }
 
@@ -37,15 +47,17 @@ export default function HabitCard({ habit, days, dragHandle }: HabitCardProps) {
   }
 
   return (
-    <article className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
+    <article className="rounded-2xl border border-white/[0.07] bg-zinc-900/60 p-5 shadow-sm transition-colors hover:border-white/15 sm:p-6">
       <div className="flex items-start gap-3">
         {dragHandle}
         <button
           type="button"
           onClick={handleToggle}
-          disabled={isPending}
-          aria-label={isDoneToday ? "Mark as not done" : "Mark as done"}
-          className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border transition disabled:opacity-50"
+          disabled={isPending || (!scheduledToday && !isDoneToday)}
+          aria-label={isDoneToday ? "Mark as not done" : scheduledToday ? "Mark as done" : "Not scheduled today"}
+          aria-pressed={isDoneToday}
+          onAnimationEnd={() => setAnimateCompletion(false)}
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-indigo-300 ${animateCompletion ? "habit-completed" : ""}`}
           style={{
             backgroundColor: isDoneToday ? habit.color : "transparent",
             borderColor: isDoneToday ? habit.color : "#52525b",
@@ -54,7 +66,7 @@ export default function HabitCard({ habit, days, dragHandle }: HabitCardProps) {
           {isDoneToday && (
             <svg
               viewBox="0 0 16 16"
-              className="h-3.5 w-3.5 text-white"
+              className="h-5 w-5 text-white"
               fill="currentColor"
             >
               <path d="M6.173 11.414 3.05 8.293a1 1 0 0 1 1.414-1.414L6.5 8.915l5.036-5.036a1 1 0 1 1 1.414 1.414L7.207 12.828a1 1 0 0 1-1.414 0Z" />
@@ -63,11 +75,14 @@ export default function HabitCard({ habit, days, dragHandle }: HabitCardProps) {
         </button>
 
         <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
+          <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
             <div>
-              <h2 className="font-medium text-zinc-100">{habit.name}</h2>
-              <p className="mt-0.5 text-xs text-zinc-500">
+              <h2 className="break-words text-lg font-semibold tracking-tight text-zinc-100">{habit.name}</h2>
+              <p className="mt-1 text-xs text-zinc-400">
                 {habit.streak} day streak
+              </p>
+              <p className="mt-1 text-xs text-indigo-300/80">
+                {scheduleLabel(habit.schedule_days)}{!scheduledToday && " · Rest day"}
               </p>
             </div>
             <div className="flex gap-1">
@@ -89,6 +104,9 @@ export default function HabitCard({ habit, days, dragHandle }: HabitCardProps) {
             </div>
           </div>
 
+        </div>
+      </div>
+      {error && <p role="alert" className="mt-3 text-sm text-red-400">{error}</p>}
           {isEditing ? (
             <div className="mt-3">
               <HabitForm
@@ -96,6 +114,7 @@ export default function HabitCard({ habit, days, dragHandle }: HabitCardProps) {
                 habitId={habit.id}
                 initialName={habit.name}
                 initialColor={habit.color}
+                initialScheduleDays={habit.schedule_days}
                 onDone={() => setIsEditing(false)}
               />
             </div>
@@ -104,10 +123,9 @@ export default function HabitCard({ habit, days, dragHandle }: HabitCardProps) {
               days={days}
               completedDates={completedDates}
               color={habit.color}
+              scheduleDays={habit.schedule_days}
             />
           )}
-        </div>
-      </div>
     </article>
   );
 }

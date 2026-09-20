@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { DEFAULT_HABITS } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/server";
+import { isScheduledOn, normalizeSchedule } from "@/lib/schedule";
 
 async function getUserId() {
   const supabase = await createClient();
@@ -37,25 +38,28 @@ export async function seedDefaultHabits() {
   // Initialization runs during page rendering; cache invalidation is not allowed here.
 }
 
-export async function createHabit(name: string, color: string) {
+export async function createHabit(name: string, color: string, scheduleDays: number[] | null = null) {
+  const schedule = normalizeSchedule(scheduleDays);
   const { supabase, userId } = await getUserId();
 
   const { error } = await supabase.from("habits").insert({
     user_id: userId,
     name: name.trim(),
     color,
+    schedule_days: schedule,
   });
 
   if (error) throw new Error(error.message);
   revalidatePath("/");
 }
 
-export async function updateHabit(id: string, name: string, color: string) {
+export async function updateHabit(id: string, name: string, color: string, scheduleDays: number[] | null = null) {
+  const schedule = normalizeSchedule(scheduleDays);
   const { supabase } = await getUserId();
 
   const { error } = await supabase
     .from("habits")
-    .update({ name: name.trim(), color })
+    .update({ name: name.trim(), color, schedule_days: schedule })
     .eq("id", id);
 
   if (error) throw new Error(error.message);
@@ -79,6 +83,12 @@ export async function toggleCompletion(
   const { supabase, userId } = await getUserId();
 
   if (done) {
+    const { data: habit, error: habitError } = await supabase
+      .from("habits").select("*").eq("id", habitId).eq("user_id", userId).single();
+    if (habitError || !habit) throw new Error("Habit not found");
+    if (!isScheduledOn(habit.schedule_days, date)) {
+      throw new Error("This habit is not scheduled for this day.");
+    }
     const { error } = await supabase.from("completions").upsert(
       {
         habit_id: habitId,

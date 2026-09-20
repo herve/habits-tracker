@@ -9,6 +9,7 @@ Minimal dark habit tracker built with Next.js, TypeScript, Tailwind, and Supabas
 - Drag habits by their grip to reorder (mouse or touch), or focus the grip and use the arrow keys. Order is saved in your account metadata.
 - Daily checkbox per habit
 - 8-day history grid
+- Daily or specific-weekday schedules; rest days are excluded from today's progress and do not break streaks. Editing a schedule recalculates history and streaks using the new schedule while preserving completions.
 - Streak counter
 - Default habits on first login
 
@@ -28,6 +29,8 @@ npm install
 4. Copy **Project URL** and **anon public key** from **Settings → API**
 
 ### 3. Environment variables
+
+For an existing database, run `supabase/migrations/20260920_habit_schedules.sql` in the Supabase SQL Editor before deploying schedule support. Existing habits remain daily.
 
 Create `.env.local` in the project root:
 
