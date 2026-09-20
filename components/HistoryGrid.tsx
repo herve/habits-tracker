@@ -1,5 +1,3 @@
-import { shortLabel } from "@/lib/dates";
-
 type HistoryGridProps = {
   days: string[];
   completedDates: Set<string>;
@@ -17,9 +15,13 @@ export default function HistoryGrid({
       <div className="grid grid-cols-7 gap-1.5 sm:grid-cols-14">
         {days.map((day) => {
           const done = completedDates.has(day);
+          const date = new Date(`${day}T12:00:00`);
           return (
             <div key={day} className="flex flex-col items-center gap-1">
-              <span className="text-[10px] text-zinc-600">{shortLabel(day)}</span>
+              <time dateTime={day} className="flex flex-col items-center text-[10px] leading-4 text-zinc-600">
+                <span>{date.getDate()}</span>
+                <span className="whitespace-nowrap">{date.toLocaleDateString("en-US", { weekday: "short" })}</span>
+              </time>
               <div
                 title={day}
                 className="h-3 w-3 rounded-full border border-zinc-700"
