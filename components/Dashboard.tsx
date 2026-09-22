@@ -5,6 +5,7 @@ import { reorderHabits } from "@/app/actions/habits";
 import { isScheduledOn } from "@/lib/schedule";
 import HabitCard from "./HabitCard";
 import HabitForm from "./HabitForm";
+import ProgressRing from "./ProgressRing";
 import type { HabitWithCompletions } from "@/types/habit";
 
 type DashboardProps = {
@@ -71,10 +72,7 @@ export default function Dashboard({ habits, days }: DashboardProps) {
             <h2 id="daily-progress" className="text-sm font-medium text-indigo-200">Today’s progress</h2>
             <p className="mt-2 text-2xl font-semibold tracking-tight text-zinc-100">{completedCount} <span className="text-base font-normal text-zinc-400">of {scheduledHabits.length} completed</span></p>
           </div>
-          <span className="text-2xl font-semibold tabular-nums text-indigo-300">{progress}%</span>
-        </div>
-        <div role="progressbar" aria-label="Today's habit completion" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} className="mt-5 h-2 overflow-hidden rounded-full bg-zinc-800">
-          <div className="h-full rounded-full bg-indigo-400 transition-[width] duration-500 ease-out motion-reduce:transition-none" style={{ width: `${progress}%` }} />
+          <ProgressRing value={scheduledHabits.length ? progress : null} label="Today's goal" />
         </div>
         <p className="mt-3 text-sm text-zinc-400" aria-live="polite">
           {habits.length === 0 ? "A small habit is a good place to start." : scheduledHabits.length === 0 ? "No habits scheduled today. Enjoy your rest day." : completedCount === scheduledHabits.length ? "All done for today. Enjoy the feeling." : completedCount === 0 ? "One small step at a time." : "You’re making time for yourself. Keep going."}
@@ -120,8 +118,12 @@ export default function Dashboard({ habits, days }: DashboardProps) {
                   }}
                   onPointerMove={(event) => {
                     if (dragging !== habit.id) return;
-                    if (event.clientY < 70) window.scrollBy(0, -16);
-                    if (event.clientY > window.innerHeight - 70) window.scrollBy(0, 16);
+                    const scrollArea = event.currentTarget.closest(".app-scroll-area");
+                    const bounds = scrollArea?.getBoundingClientRect();
+                    if (scrollArea && bounds) {
+                      if (event.clientY < bounds.top + 70) scrollArea.scrollBy(0, -16);
+                      if (event.clientY > bounds.bottom - 70) scrollArea.scrollBy(0, 16);
+                    }
                     setTarget(targetAt(event.clientX, event.clientY));
                   }}
                   onPointerUp={(event) => {

@@ -1,5 +1,6 @@
-import Header from "@/components/Header";
+import AppShell from "@/components/AppShell";
 import StatsSummary from "@/components/StatsSummary";
+import DashboardMetrics from "@/components/DashboardMetrics";
 import { loadHabits } from "@/lib/load-habits";
 import { today } from "@/lib/dates";
 import { computeStats } from "@/lib/stats";
@@ -7,12 +8,13 @@ import { streakColor } from "@/lib/streak-style";
 
 export default async function StatsPage() {
   const habits = await loadHabits(false);
-  const stats = computeStats(habits, today());
-  return <>
-    <Header active="stats" />
+  const reference = today();
+  const stats = computeStats(habits, reference);
+  return <AppShell active="stats">
     <main className="mx-auto max-w-xl space-y-6 px-4 py-8">
       <div><h2 className="text-xl font-semibold text-zinc-100">Your progress</h2><p className="mt-1 text-sm text-zinc-400">Small steps, seen over time.</p></div>
-      <StatsSummary stats={stats} />
+      <DashboardMetrics habits={habits} reference={reference} expanded />
+      <StatsSummary stats={stats} showWeekly={false} />
       <section className="rounded-2xl border border-white/[0.07] bg-zinc-900/60 p-4">
         <h3 className="font-medium text-zinc-100">Personal best streaks</h3>
         <p className="mt-1 text-xs text-zinc-400">All time · consecutive scheduled days</p>
@@ -24,5 +26,5 @@ export default async function StatsPage() {
       </section>
       <p className="text-xs leading-5 text-zinc-500">Only scheduled days since each habit was created count. Today is included; future days are excluded. Stats use your current schedule, so changing it recalculates past results.</p>
     </main>
-  </>;
+  </AppShell>;
 }
