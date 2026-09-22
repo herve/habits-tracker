@@ -16,9 +16,10 @@ type HabitCardProps = {
   dragHandle?: ReactNode;
   historyOpen: boolean;
   onToggleHistory: () => void;
+  showMotivation?: boolean;
 };
 
-export default function HabitCard({ habit, days, dragHandle, historyOpen, onToggleHistory }: HabitCardProps) {
+export default function HabitCard({ habit, days, dragHandle, historyOpen, onToggleHistory, showMotivation = true }: HabitCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [animateCompletion, setAnimateCompletion] = useState(false);
@@ -119,7 +120,7 @@ export default function HabitCard({ habit, days, dragHandle, historyOpen, onTogg
       <div className="mt-1 flex flex-wrap items-center gap-x-2">
         {dragHandle}
         <p className={`min-w-0 flex-1 ${habit.streak === 0 ? "text-sm font-normal" : "text-lg font-medium"} ${streakColor(habit.streak)}`}>
-          {habit.streak === 0 ? "Start small today." : `${habit.streak} day streak`}
+          {habit.streak === 0 && showMotivation ? "Start small today." : `${habit.streak} day streak`}
         </p>
         <button type="button" onClick={onToggleHistory} aria-expanded={historyOpen} aria-controls={`history-${habit.id}`}
           className="min-h-11 rounded-lg px-2 text-xs text-indigo-300 hover:bg-zinc-800">

@@ -11,16 +11,18 @@ import type { HabitWithCompletions } from "@/types/habit";
 type DashboardProps = {
   habits: HabitWithCompletions[];
   days: string[];
+  showMotivation?: boolean;
+  expandRestDays?: boolean;
 };
 
-export default function Dashboard({ habits, days }: DashboardProps) {
+export default function Dashboard({ habits, days, showMotivation = true, expandRestDays = false }: DashboardProps) {
   const [orderedHabits, setOrderedHabits] = useOptimistic(habits);
   const [isSaving, startTransition] = useTransition();
   const [dragging, setDragging] = useState<string | null>(null);
   const [target, setTarget] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [openHistoryId, setOpenHistoryId] = useState<string | null>(null);
-  const [showNotToday, setShowNotToday] = useState(false);
+  const [showNotToday, setShowNotToday] = useState(expandRestDays);
   const listId = useId();
   const scheduledHabits = habits.filter((habit) => isScheduledOn(habit.schedule_days, days.at(-1)!));
   const completedCount = scheduledHabits.filter((habit) =>
@@ -74,9 +76,9 @@ export default function Dashboard({ habits, days }: DashboardProps) {
           </div>
           <ProgressRing value={scheduledHabits.length ? progress : null} label="Today's goal" />
         </div>
-        <p className="mt-3 text-sm text-zinc-400" aria-live="polite">
+        {showMotivation && <p className="mt-3 text-sm text-zinc-400" aria-live="polite">
           {habits.length === 0 ? "A small habit is a good place to start." : scheduledHabits.length === 0 ? "No habits scheduled today. Enjoy your rest day." : completedCount === scheduledHabits.length ? "All done for today. Enjoy the feeling." : completedCount === 0 ? "One small step at a time." : "You’re making time for yourself. Keep going."}
-        </p>
+        </p>}
       </section>
       <p id="reorder-help" className="sr-only">
         Drag the grip to reorder habits, or focus it and use the arrow keys.
@@ -103,7 +105,7 @@ export default function Dashboard({ habits, days }: DashboardProps) {
           {group.map((habit, index) => (
             <div key={habit.id} data-habit-id={habit.id}
               className={`rounded-2xl ${dragging === habit.id ? "opacity-50" : ""} ${target === habit.id && target !== dragging ? "ring-2 ring-indigo-400" : ""}`}>
-              <HabitCard habit={habit} days={days}
+              <HabitCard habit={habit} days={days} showMotivation={showMotivation}
                 historyOpen={openHistoryId === habit.id}
                 onToggleHistory={() => setOpenHistoryId((current) => current === habit.id ? null : habit.id)} dragHandle={
                 <button type="button" disabled={isSaving || group.length < 2}

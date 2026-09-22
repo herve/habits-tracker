@@ -5,6 +5,8 @@ Minimal dark habit tracker built with Next.js, TypeScript, Tailwind, and Supabas
 ## Features (Phase 1)
 
 - Email/password auth
+- Profile pictures support device uploads (JPG/PNG/WebP, 2 MB maximum), emoji selection and removal. Run `supabase/migrations/20260922_avatars.sql` for the Storage bucket and owner-only upload/delete policies. Avatar files have public read URLs; use them only for pictures intended to be visible. URLs/emoji values are saved in user metadata.
+- Profile page with account details, avatar presets, editable display name, activity summary, and account-synced preferences for motivation messages and rest-day visibility. No additional database migration required.
 - Add, edit, delete habits
 - Drag habits by their grip to reorder (mouse or touch), or focus the grip and use the arrow keys. Order is saved in your account metadata.
 - Daily checkbox per habit
