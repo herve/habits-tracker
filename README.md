@@ -11,6 +11,7 @@ Minimal dark habit tracker built with Next.js, TypeScript, Tailwind, and Supabas
 - 8-day history grid
 - Daily or specific-weekday schedules; rest days are excluded from today's progress and do not break streaks. Editing a schedule recalculates history and streaks using the new schedule while preserving completions.
 - Streak counter
+- Stats page and per-habit History stats: Monday–Sunday weekly completion, all-time best streaks, and weekday patterns over the last 28 days. Only scheduled days since creation through today count. Past statistics use the current schedule.
 - Default habits on first login
 
 ## Setup

@@ -7,6 +7,7 @@ import { isScheduledOn, scheduleLabel } from "@/lib/schedule";
 import { streakColor } from "@/lib/streak-style";
 import HistoryGrid from "./HistoryGrid";
 import HabitForm from "./HabitForm";
+import HabitStats from "./HabitStats";
 import type { HabitWithCompletions } from "@/types/habit";
 
 type HabitCardProps = {
@@ -145,6 +146,7 @@ export default function HabitCard({ habit, days, dragHandle, historyOpen, onTogg
               color={habit.color}
               scheduleDays={habit.schedule_days}
             />
+            {historyOpen && <HabitStats habit={habit} reference={days.at(-1)!} />}
           </div>
     </article>
   );

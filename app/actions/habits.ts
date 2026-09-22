@@ -51,6 +51,7 @@ export async function createHabit(name: string, color: string, scheduleDays: num
 
   if (error) throw new Error(error.message);
   revalidatePath("/");
+  revalidatePath("/stats");
 }
 
 export async function updateHabit(id: string, name: string, color: string, scheduleDays: number[] | null = null) {
@@ -64,6 +65,7 @@ export async function updateHabit(id: string, name: string, color: string, sched
 
   if (error) throw new Error(error.message);
   revalidatePath("/");
+  revalidatePath("/stats");
 }
 
 export async function deleteHabit(id: string) {
@@ -73,6 +75,7 @@ export async function deleteHabit(id: string) {
 
   if (error) throw new Error(error.message);
   revalidatePath("/");
+  revalidatePath("/stats");
 }
 
 export async function toggleCompletion(
@@ -111,6 +114,7 @@ export async function toggleCompletion(
   }
 
   revalidatePath("/");
+  revalidatePath("/stats");
 }
 
 export async function signOut() {
@@ -135,4 +139,5 @@ export async function reorderHabits(ids: string[]) {
   const { error } = await supabase.auth.updateUser({ data: { habit_order: ids } });
   if (error) throw new Error(error.message);
   revalidatePath("/");
+  revalidatePath("/stats");
 }
